@@ -1,4 +1,4 @@
-('G:\\element\\files_2\\build\\NetMeter\\PYZ-00.pyz',
+('G:\\D\\New folder (13)\\build\\NetMeter\\PYZ-00.pyz',
  [('PIL',
    'C:\\Users\\misba\\AppData\\Roaming\\Python\\Python314\\site-packages\\PIL\\__init__.py',
    'PYMODULE'),

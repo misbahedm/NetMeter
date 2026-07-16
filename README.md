@@ -1,6 +1,6 @@
 # NetMeter
 
-A lightweight, Mini network monitor for Windows, built in Python.
+A lightweight desktop network monitor for Windows, built in Python.
 
 ## What it does
 
@@ -66,8 +66,13 @@ widget and choosing "Settings...". You can adjust, all applied live:
 - **Graph history** — how many points the scrolling graph keeps (10–300).
 - **Colors** — pick custom colors for background, download line, upload
   line, text, and grid lines via a color picker.
+- **Start NetMeter when Windows starts** — a checkbox that adds/removes
+  NetMeter from your user startup apps (via the `HKCU\...\Run` registry
+  key — no admin rights needed, and it won't show a console window,
+  since it launches through `pythonw.exe`). If you've packaged NetMeter
+  as an `.exe` with PyInstaller, this points at the `.exe` directly.
 - **Reset to defaults** — puts everything back to the original look
-  (keeps your saved screen position).
+  (keeps your saved screen position and startup setting).
 
 All changes are saved automatically to
 `%APPDATA%\NetMeter\config.json`, so they persist between runs.

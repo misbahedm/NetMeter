@@ -1,5 +1,5 @@
 """
-NetMeter - A mini network monitor for Windows.
+NetMeter - A desktop network monitor for Windows.
 
 Features
 --------
@@ -41,6 +41,11 @@ import psutil
 import tkinter as tk
 from tkinter import ttk, colorchooser
 
+if sys.platform == "win32":
+    import winreg
+else:
+    winreg = None
+
 try:
     import pystray
     from PIL import Image, ImageDraw
@@ -78,6 +83,7 @@ DEFAULT_CONFIG = {
     "text_color": "#eaeaea",
     "click_through_drag": True,
     "always_on_top": True,
+    "start_on_boot": False,
 }
 
 MIN_WIDTH, MAX_WIDTH = 150, 600
@@ -108,6 +114,57 @@ def save_config(cfg):
             json.dump(cfg, f, indent=2)
     except OSError:
         pass
+
+
+# --------------------------------------------------------------------------
+# "Start with Windows" support (HKCU Run key -- no admin rights needed)
+# --------------------------------------------------------------------------
+
+RUN_KEY_PATH = r"Software\Microsoft\Windows\CurrentVersion\Run"
+
+
+def _startup_command():
+    """Build the command line used to auto-launch NetMeter at logon."""
+    if getattr(sys, "frozen", False):
+        # Built with PyInstaller (--onefile/--windowed) -> just the .exe
+        return f'"{sys.executable}"'
+    # Running as a plain .py script -> launch with pythonw.exe so no
+    # console window pops up at logon.
+    py_dir = os.path.dirname(sys.executable)
+    pythonw = os.path.join(py_dir, "pythonw.exe")
+    if not os.path.exists(pythonw):
+        pythonw = sys.executable  # fallback if pythonw isn't found
+    script = os.path.abspath(__file__)
+    return f'"{pythonw}" "{script}"'
+
+
+def is_startup_enabled():
+    """Check the actual registry state (source of truth, not just cfg)."""
+    if winreg is None:
+        return False
+    try:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY_PATH, 0, winreg.KEY_READ) as key:
+            winreg.QueryValueEx(key, APP_NAME)
+            return True
+    except OSError:
+        return False
+
+
+def set_startup_enabled(enable):
+    """Add/remove the HKCU Run key entry that starts NetMeter at logon."""
+    if winreg is None:
+        return
+    try:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY_PATH, 0, winreg.KEY_SET_VALUE) as key:
+            if enable:
+                winreg.SetValueEx(key, APP_NAME, 0, winreg.REG_SZ, _startup_command())
+            else:
+                try:
+                    winreg.DeleteValue(key, APP_NAME)
+                except FileNotFoundError:
+                    pass
+    except OSError as e:
+        print(f"[NetMeter] Could not update startup registry entry: {e}")
 
 
 def log_daily_usage(down_total, up_total):
@@ -237,7 +294,7 @@ class NetworkSampler:
 
 
 # --------------------------------------------------------------------------
-# Corner widget
+# Corner widget (the small always-on-top overlay)
 # --------------------------------------------------------------------------
 
 class MeterWidget:
@@ -557,9 +614,25 @@ class SettingsWindow:
             textvariable=self.history_var, width=6
         ).grid(row=2, column=1, padx=6)
 
+        # --- Startup ----------------------------------------------------
+        frame_startup = ttk.LabelFrame(self.win, text="Startup")
+        frame_startup.grid(row=2, column=0, sticky="ew", **pad)
+
+        self.startup_var = tk.BooleanVar(value=is_startup_enabled())
+        ttk.Checkbutton(
+            frame_startup, text="Start NetMeter when Windows starts",
+            variable=self.startup_var
+        ).grid(row=0, column=0, sticky="w", padx=6, pady=4)
+
+        if winreg is None:
+            ttk.Label(
+                frame_startup, text="(Windows only -- not available on this OS)",
+                foreground="#888"
+            ).grid(row=1, column=0, sticky="w", padx=6, pady=(0, 4))
+
         # --- Colors -------------------------------------------------------
         frame_color = ttk.LabelFrame(self.win, text="Colors")
-        frame_color.grid(row=2, column=0, sticky="ew", **pad)
+        frame_color.grid(row=3, column=0, sticky="ew", **pad)
 
         self.color_keys = [
             ("bg_color", "Background"),
@@ -581,7 +654,7 @@ class SettingsWindow:
 
         # --- Buttons --------------------------------------------------
         frame_btn = ttk.Frame(self.win)
-        frame_btn.grid(row=3, column=0, sticky="ew", **pad)
+        frame_btn.grid(row=4, column=0, sticky="ew", **pad)
         ttk.Button(frame_btn, text="Apply", command=self._apply).pack(side="left", padx=4)
         ttk.Button(frame_btn, text="Reset to defaults", command=self._reset_defaults).pack(side="left", padx=4)
         ttk.Button(frame_btn, text="Close", command=self.win.destroy).pack(side="right", padx=4)
@@ -598,11 +671,17 @@ class SettingsWindow:
         self.cfg["opacity"] = round(self.opacity_var.get(), 2)
         self.cfg["update_ms"] = max(200, self.interval_var.get())
         self.cfg["history_len"] = max(10, self.history_var.get())
+
+        want_startup = self.startup_var.get()
+        if want_startup != is_startup_enabled():
+            set_startup_enabled(want_startup)
+        self.cfg["start_on_boot"] = is_startup_enabled()
+
         self.on_apply()
 
     def _reset_defaults(self):
         for k, v in DEFAULT_CONFIG.items():
-            if k not in ("x", "y"):
+            if k not in ("x", "y", "start_on_boot"):
                 self.cfg[k] = v
         self.width_var.set(self.cfg["width"])
         self.height_var.set(self.cfg["height"])
