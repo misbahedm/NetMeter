@@ -1,123 +1,165 @@
 # NetMeter
 
-A lightweight desktop network monitor for Windows, built in Python.
+![Python](https://img.shields.io/badge/python-3.9%2B-blue)
+![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey)
 
-## What it does
+A lightweight desktop network monitor. A small always-on-top widget sits in a
+corner of your screen and shows live download/upload speed as a scrolling
+graph, while a tray icon and a usage-statistics window keep track of how much
+data you have used per day and per month.
 
-- **Corner widget** — a small, borderless, always-on-top overlay in the
-  top-right corner of your screen (drag it anywhere you like) showing a
-  live scrolling graph of download (cyan) and upload (orange) speed, plus
-  the current numeric speeds and today's total data used.
-- **System tray icon** — right-click for a menu; hover to see live
-  down/up speed in the tooltip, right next to your Windows clock.
-- **Active Connections window** — a real-time list of which processes on
-  your PC currently have open internet connections (process name, local
-  address, remote address, status). This is the practical way to see
-  "what's using my internet" without needing raw packet capture.
-- **Daily usage log** — total bytes down/up per day, saved to
-  `%APPDATA%\NetMeter\daily_usage.csv` so history survives restarts.
+Built with Python, Tkinter and psutil. No account, no telemetry, no network
+access of its own: everything stays on your machine.
 
-## Setup
+<!--
+Screenshots: add images to a docs/ folder and uncomment, e.g.
+![Widget](docs/widget.png)
+![Usage statistics](docs/stats.png)
+-->
 
-1. Install Python 3.9+ from python.org (tick "Add to PATH" during install).
-2. Open a terminal in this folder and install dependencies:
+## Features
 
-   ```
-   pip install -r requirements.txt
-   ```
+- **Corner widget**: borderless, always on top, draggable and resizable. Shows
+  a live download (cyan) and upload (orange) graph, current speeds, and the
+  data used this session.
+- **System tray icon**: hover for live speeds; right-click for the menu.
+- **Usage statistics** with two tabs:
+  - **Daily**: totals for today, last 7 days, this month, last month, all
+    recorded time and daily average, a 30-day bar chart and a per-day history
+    table.
+  - **Monthly**: a 12-month bar chart and a table with one row per month.
+- **Active connections window**: lists which processes currently have open
+  internet connections (process, local and remote address, status).
+- **Settings**: widget size, opacity, refresh interval, graph history length,
+  colors, "start at login", and reset to defaults. Changes apply live.
+- **Start at login** on Windows and Linux, from the Settings window.
+- **Persistent history**: daily totals survive restarts and roll over at
+  midnight.
 
-3. Run it:
+## Quick start
 
-   ```
-   python netmeter.py
-   ```
+Requires Python 3.9 or newer.
 
-The widget will appear in the top-right corner and a tray icon will show
-up near your clock.
+```bash
+pip install -r requirements.txt
+python netmeter.py
+```
+
+### Windows
+
+```powershell
+pip install -r requirements.txt
+python netmeter.py
+```
+
+### Linux (tested on Zorin OS / Ubuntu-based distros)
+
+The install script sets up an isolated virtual environment, installs the
+dependencies and adds NetMeter to your application menu:
+
+```bash
+sudo apt install python3-tk
+chmod +x install_linux.sh
+./install_linux.sh
+```
+
+Then launch **NetMeter** from your app menu, or run `~/.local/bin/netmeter`.
+
+For the tray icon your desktop needs an AppIndicator backend:
+
+```bash
+sudo apt install gir1.2-ayatanaappindicator3-0.1   # or gir1.2-appindicator3-0.1
+```
+
+Without it the app still runs; it just skips the tray icon.
 
 ## Using it
 
-- **Move the widget**: left-click anywhere except the bottom-right corner
-  and drag.
-- **Resize the widget**: click-and-drag the small dotted grip in the
-  bottom-right corner, same as resizing a normal window. It's clamped
-  between 150–600px wide and 70–400px tall so the graph stays readable.
-- **Snap to a corner**: right-click the widget → pick a corner
-  (Top-Right / Bottom-Right / Top-Left / Bottom-Left, the last two are
-  handy if you want it to sit right above the taskbar clock area).
-- **Hide/show**: right-click the tray icon, or right-click the widget
-  itself and choose Hide. Bringing it back is "Show widget" from the
-  tray menu.
-- **See what's using your internet**: tray icon → "Active connections..."
-  This opens a table of processes with active remote connections,
-  refreshing every 3 seconds.
-- **Quit**: tray icon → Quit, or right-click the widget → "Quit NetMeter".
+| Action | How |
+| --- | --- |
+| Move the widget | Drag it anywhere except the bottom-right corner |
+| Resize the widget | Drag the dotted grip in the bottom-right corner (150 to 600 px wide, 70 to 400 px tall) |
+| Snap to a corner | Right-click the widget and pick a corner |
+| Open statistics, settings or connections | Right-click the widget or the tray icon |
+| Hide the widget | Right-click, then Hide (the tray icon keeps running) |
+| Quit | Tray icon, then Quit; or right-click the widget, then Quit NetMeter |
 
-### Settings window
+### Settings
 
-Open it from the tray icon ("Settings...") or by right-clicking the
-widget and choosing "Settings...". You can adjust, all applied live:
+Open **Settings...** from the tray or widget menu.
 
-- **Widget size** — precise width/height fields (same effect as dragging
-  the resize grip, just exact numbers).
-- **Opacity** — how see-through the widget is.
-- **Update interval** — how often the speed/graph refreshes (200ms–5s).
-  Lower = snappier but slightly more CPU; higher = smoother on CPU.
-- **Graph history** — how many points the scrolling graph keeps (10–300).
-- **Colors** — pick custom colors for background, download line, upload
-  line, text, and grid lines via a color picker.
-- **Start NetMeter when Windows starts** — a checkbox that adds/removes
-  NetMeter from your user startup apps (via the `HKCU\...\Run` registry
-  key — no admin rights needed, and it won't show a console window,
-  since it launches through `pythonw.exe`). If you've packaged NetMeter
-  as an `.exe` with PyInstaller, this points at the `.exe` directly.
-- **Reset to defaults** — puts everything back to the original look
-  (keeps your saved screen position and startup setting).
+- **Widget size**: exact width and height.
+- **Opacity**: how see-through the widget is.
+- **Update interval**: 200 ms to 5 s. Lower is snappier, higher uses less CPU.
+- **Graph history**: 10 to 300 points.
+- **Colors**: background, download line, upload line, text and grid.
+- **Start NetMeter when I log in**: adds or removes the startup entry.
 
-All changes are saved automatically to
-`%APPDATA%\NetMeter\config.json`, so they persist between runs.
+## Where your data is stored
 
-Your widget position and size are remembered automatically between runs
-(saved to `%APPDATA%\NetMeter\config.json`).
+| OS | Folder |
+| --- | --- |
+| Windows | `%APPDATA%\NetMeter\` |
+| Linux | `~/.config/NetMeter/` |
 
-## Making it start automatically / run in the background
+- `config.json`: your settings and widget position.
+- `daily_usage.csv`: one row per day with downloaded and uploaded bytes. You
+  can open it in any spreadsheet app. Use **Clear history...** in the
+  statistics window to reset it.
 
-Two easy options on Windows:
+"Start at login" uses the current-user registry Run key on Windows and an XDG
+autostart file (`~/.config/autostart/netmeter.desktop`) on Linux. Neither needs
+admin rights.
 
-1. **Startup folder (simplest)**: press `Win+R`, type `shell:startup`,
-   and drop a shortcut to `netmeter.py` (or a `.bat` file that runs
-   `pythonw netmeter.py`) into that folder. Using `pythonw.exe` instead
-   of `python.exe` avoids a console window popping up.
-2. **Task Scheduler**: create a task that runs
-   `pythonw.exe C:\path\to\netmeter.py` at log-on, for more control
-   (e.g. run with highest privileges so the Active Connections window can
-   always resolve process owners).
+## Build a standalone Windows .exe
 
-## Turning it into a standalone .exe (optional)
-
-If you don't want to keep Python installed just to run this, package it
-with PyInstaller:
-
-```
+```powershell
 pip install pyinstaller
-pyinstaller --onefile --windowed --name NetMeter netmeter.py
+python -m PyInstaller --onefile --windowed --name NetMeter --icon netmeter.png netmeter.py
 ```
 
-The resulting `dist\NetMeter.exe` runs standalone — no console window,
-no Python required on the target machine.
+The result is `dist\NetMeter.exe`. The window, taskbar and tray icons are drawn
+in code, so the exe does not need `netmeter.png` at runtime.
 
-## Notes & limitations
+Notes:
 
-- Speed graph is based on total system-wide network throughput
-  (`psutil.net_io_counters`), refreshed every second — accurate for "how
-  fast is my internet right now" but not split out per network adapter
-  by default. If you have multiple adapters (e.g. Wi-Fi + Ethernet) and
-  want a specific one, this is a good next feature to add.
-- The Active Connections list shows *which processes have open
-  connections*, not their live bandwidth split — Windows doesn't expose
-  true per-process bandwidth without a packet-capture driver (like
-  Npcap), which is a much heavier dependency. This gives you the "who's
-  talking to the internet right now" view without needing that.
-- Run as Administrator if you want every process name to resolve in the
-  Active Connections window — otherwise system-level connections may
-  show as PID `-`/`?`.
+- If `pyinstaller` is "not recognized", use `python -m PyInstaller` as above.
+- If the build fails with *Access is denied* on `dist\NetMeter.exe`, the old
+  copy is still running. Quit it (or run `taskkill /F /IM NetMeter.exe`) and
+  build again.
+- If it fails with *Icon input file not found*, put `netmeter.png` next to
+  `netmeter.py` or drop the `--icon` flag.
+- An unsigned exe can trigger a Windows SmartScreen warning on other PCs.
+  Signing it with a code-signing certificate is the way to avoid that.
+
+## How it works
+
+A background thread reads the system-wide byte counters from
+`psutil.net_io_counters()` once per interval and turns the difference into
+bytes per second. The widget redraws from that data. Daily totals are written
+to `daily_usage.csv` every 30 seconds and when you quit.
+
+## Limitations
+
+- Speeds are system-wide totals across all network adapters.
+- The **Active connections** window shows which processes have open
+  connections, not how much bandwidth each one is using. Real per-process
+  bandwidth needs packet capture (for example WinDivert on Windows), which is
+  not included.
+- Listing connections for other users' processes may require running as
+  Administrator (Windows) or root (Linux).
+- macOS is not tested, and "start at login" is not implemented there.
+
+## Project layout
+
+```
+netmeter.py          the whole application
+requirements.txt     psutil, pystray, pillow
+install_linux.sh     Linux installer (venv + app menu entry)
+netmeter.png         app icon source (used for the .exe icon and Linux launcher)
+```
+
+## Contributing
+
+Issues and pull requests are welcome. Ideas on the roadmap: per-process
+bandwidth, per-adapter graphs, CSV/PNG export of statistics.

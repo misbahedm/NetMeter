@@ -15,12 +15,13 @@
 
 <div class="node">
   <a name="netmeter.py"></a>
-  <a target="code" href="///G:/D/New%20folder%20%2813%29/netmeter.py" type="text/plain"><tt>netmeter.py</tt></a>
+  <a target="code" href="///G:/element/NetMeter/netmeter.py" type="text/plain"><tt>netmeter.py</tt></a>
 <span class="moduletype">Script</span>  <div class="import">
 imports:
     <a href="#PIL">PIL</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
  &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
+ &#8226;   <a href="#PIL.ImageTk">PIL.ImageTk</a>
  &#8226;   <a href="#_collections_abc">_collections_abc</a>
  &#8226;   <a href="#_weakrefset">_weakrefset</a>
  &#8226;   <a href="#abc">abc</a>
@@ -184,6 +185,7 @@ imports:
  &#8226;   <a href="#threading">threading</a>
  &#8226;   <a href="#tkinter">tkinter</a>
  &#8226;   <a href="#tkinter.colorchooser">tkinter.colorchooser</a>
+ &#8226;   <a href="#tkinter.messagebox">tkinter.messagebox</a>
  &#8226;   <a href="#tkinter.ttk">tkinter.ttk</a>
  &#8226;   <a href="#traceback">traceback</a>
  &#8226;   <a href="#types">types</a>
@@ -262,7 +264,6 @@ imported by:
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
  &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
  &#8226;   <a href="#PIL.ImageFilter">PIL.ImageFilter</a>
- &#8226;   <a href="#PIL.ImageMath">PIL.ImageMath</a>
  &#8226;   <a href="#PIL.ImageOps">PIL.ImageOps</a>
  &#8226;   <a href="#PIL.ImagePalette">PIL.ImagePalette</a>
  &#8226;   <a href="#PIL.ImageQt">PIL.ImageQt</a>
@@ -343,7 +344,6 @@ imports:
  &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
  &#8226;   <a href="#PIL.ImageFilter">PIL.ImageFilter</a>
  &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
- &#8226;   <a href="#PIL.ImageMath">PIL.ImageMath</a>
  &#8226;   <a href="#PIL.ImageMode">PIL.ImageMode</a>
  &#8226;   <a href="#PIL.ImageOps">PIL.ImageOps</a>
  &#8226;   <a href="#PIL.ImagePalette">PIL.ImagePalette</a>
@@ -365,7 +365,6 @@ imports:
  &#8226;   <a href="#PIL._avif">PIL._avif</a>
  &#8226;   <a href="#PIL._imaging">PIL._imaging</a>
  &#8226;   <a href="#PIL._imagingcms">PIL._imagingcms</a>
- &#8226;   <a href="#PIL._imagingmath">PIL._imagingmath</a>
  &#8226;   <a href="#PIL._imagingtk">PIL._imagingtk</a>
  &#8226;   <a href="#PIL._version">PIL._version</a>
  &#8226;   <a href="#PIL._webp">PIL._webp</a>
@@ -407,7 +406,6 @@ imported by:
  &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
  &#8226;   <a href="#PIL.ImageFilter">PIL.ImageFilter</a>
  &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
- &#8226;   <a href="#PIL.ImageMath">PIL.ImageMath</a>
  &#8226;   <a href="#PIL.ImageMode">PIL.ImageMode</a>
  &#8226;   <a href="#PIL.ImageOps">PIL.ImageOps</a>
  &#8226;   <a href="#PIL.ImagePalette">PIL.ImagePalette</a>
@@ -456,7 +454,6 @@ imported by:
  &#8226;   <a href="#PIL._imaging">PIL._imaging</a>
  &#8226;   <a href="#PIL._imagingcms">PIL._imagingcms</a>
  &#8226;   <a href="#PIL._imagingft">PIL._imagingft</a>
- &#8226;   <a href="#PIL._imagingmath">PIL._imagingmath</a>
  &#8226;   <a href="#PIL._imagingtk">PIL._imagingtk</a>
  &#8226;   <a href="#PIL._typing">PIL._typing</a>
  &#8226;   <a href="#PIL._util">PIL._util</a>
@@ -698,6 +695,7 @@ imports:
  &#8226;   <a href="#__future__">__future__</a>
  &#8226;   <a href="#gzip">gzip</a>
  &#8226;   <a href="#math">math</a>
+ &#8226;   <a href="#zlib">zlib</a>
 
   </div>
   <div class="import">
@@ -803,8 +801,6 @@ imports:
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
  &#8226;   <a href="#PIL.ImageChops">PIL.ImageChops</a>
  &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
- &#8226;   <a href="#PIL.ImageMath">PIL.ImageMath</a>
- &#8226;   <a href="#PIL.ImageOps">PIL.ImageOps</a>
  &#8226;   <a href="#PIL.ImagePalette">PIL.ImagePalette</a>
  &#8226;   <a href="#PIL.ImageSequence">PIL.ImageSequence</a>
  &#8226;   <a href="#PIL._binary">PIL._binary</a>
@@ -818,8 +814,6 @@ imports:
  &#8226;   <a href="#io">io</a>
  &#8226;   <a href="#itertools">itertools</a>
  &#8226;   <a href="#math">math</a>
- &#8226;   <a href="#os">os</a>
- &#8226;   <a href="#subprocess">subprocess</a>
  &#8226;   <a href="#typing">typing</a>
 
   </div>
@@ -979,6 +973,7 @@ imports:
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
  &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
  &#8226;   <a href="#PIL.ImagePalette">PIL.ImagePalette</a>
+ &#8226;   <a href="#PIL._deprecate">PIL._deprecate</a>
  &#8226;   <a href="#PIL._util">PIL._util</a>
  &#8226;   <a href="#__future__">__future__</a>
  &#8226;   <a href="#os">os</a>
@@ -1070,7 +1065,6 @@ imports:
  &#8226;   <a href="#defusedxml">defusedxml</a>
  &#8226;   <a href="#enum">enum</a>
  &#8226;   <a href="#io">io</a>
- &#8226;   <a href="#logging">logging</a>
  &#8226;   <a href="#math">math</a>
  &#8226;   <a href="#mmap">mmap</a>
  &#8226;   <a href="#os">os</a>
@@ -1078,7 +1072,6 @@ imports:
  &#8226;   <a href="#struct">struct</a>
  &#8226;   <a href="#sys">sys</a>
  &#8226;   <a href="#tempfile">tempfile</a>
- &#8226;   <a href="#types">types</a>
  &#8226;   <a href="#typing">typing</a>
  &#8226;   <a href="#warnings">warnings</a>
  &#8226;   <a href="#xml.etree.ElementTree">xml.etree.ElementTree</a>
@@ -1114,7 +1107,6 @@ imported by:
  &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
  &#8226;   <a href="#PIL.ImageFilter">PIL.ImageFilter</a>
  &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
- &#8226;   <a href="#PIL.ImageMath">PIL.ImageMath</a>
  &#8226;   <a href="#PIL.ImageOps">PIL.ImageOps</a>
  &#8226;   <a href="#PIL.ImagePalette">PIL.ImagePalette</a>
  &#8226;   <a href="#PIL.ImagePath">PIL.ImagePath</a>
@@ -1186,7 +1178,6 @@ imports:
     <a href="#PIL">PIL</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
  &#8226;   <a href="#PIL.ImageWin">PIL.ImageWin</a>
- &#8226;   <a href="#PIL._deprecate">PIL._deprecate</a>
  &#8226;   <a href="#PIL._imagingcms">PIL._imagingcms</a>
  &#8226;   <a href="#PIL._typing">PIL._typing</a>
  &#8226;   <a href="#PIL._util">PIL._util</a>
@@ -1379,7 +1370,6 @@ imports:
  &#8226;   <a href="#PIL._typing">PIL._typing</a>
  &#8226;   <a href="#__future__">__future__</a>
  &#8226;   <a href="#abc">abc</a>
- &#8226;   <a href="#functools">functools</a>
  &#8226;   <a href="#types">types</a>
  &#8226;   <a href="#typing">typing</a>
 
@@ -1430,30 +1420,6 @@ imported by:
 </div>
 
 <div class="node">
-  <a name="PIL.ImageMath"></a>
-  <a target="code" href="///C:/Users/misba/AppData/Roaming/Python/Python314/site-packages/PIL/ImageMath.py" type="text/plain"><tt>PIL.ImageMath</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#'collections.abc'">'collections.abc'</a>
- &#8226;   <a href="#PIL">PIL</a>
- &#8226;   <a href="#PIL.Image">PIL.Image</a>
- &#8226;   <a href="#PIL._imagingmath">PIL._imagingmath</a>
- &#8226;   <a href="#__future__">__future__</a>
- &#8226;   <a href="#builtins">builtins</a>
- &#8226;   <a href="#types">types</a>
- &#8226;   <a href="#typing">typing</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#PIL">PIL</a>
- &#8226;   <a href="#PIL.GifImagePlugin">PIL.GifImagePlugin</a>
-
-  </div>
-
-</div>
-
-<div class="node">
   <a name="PIL.ImageMode"></a>
   <a target="code" href="///C:/Users/misba/AppData/Roaming/Python/Python314/site-packages/PIL/ImageMode.py" type="text/plain"><tt>PIL.ImageMode</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
@@ -1486,8 +1452,6 @@ imports:
  &#8226;   <a href="#PIL.ImageColor">PIL.ImageColor</a>
  &#8226;   <a href="#PIL.ImagePalette">PIL.ImagePalette</a>
  &#8226;   <a href="#__future__">__future__</a>
- &#8226;   <a href="#functools">functools</a>
- &#8226;   <a href="#operator">operator</a>
  &#8226;   <a href="#re">re</a>
  &#8226;   <a href="#typing">typing</a>
 
@@ -1496,7 +1460,6 @@ imports:
 imported by:
     <a href="#PIL">PIL</a>
  &#8226;   <a href="#PIL.CurImagePlugin">PIL.CurImagePlugin</a>
- &#8226;   <a href="#PIL.GifImagePlugin">PIL.GifImagePlugin</a>
  &#8226;   <a href="#PIL.TiffImagePlugin">PIL.TiffImagePlugin</a>
 
   </div>
@@ -1573,6 +1536,7 @@ imports:
  &#8226;   <a href="#PIL">PIL</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
  &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
+ &#8226;   <a href="#PIL._deprecate">PIL._deprecate</a>
  &#8226;   <a href="#PIL._util">PIL._util</a>
  &#8226;   <a href="#__future__">__future__</a>
  &#8226;   <a href="#io">io</a>
@@ -1598,6 +1562,7 @@ imports:
  &#8226;   <a href="#PIL">PIL</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
  &#8226;   <a href="#__future__">__future__</a>
+ &#8226;   <a href="#typing">typing</a>
 
   </div>
   <div class="import">
@@ -1681,6 +1646,7 @@ imports:
 imported by:
     <a href="#PIL">PIL</a>
  &#8226;   <a href="#PIL.SpiderImagePlugin">PIL.SpiderImagePlugin</a>
+ &#8226;   <a href="#netmeter.py">netmeter.py</a>
 
   </div>
 
@@ -1790,6 +1756,7 @@ imports:
  &#8226;   <a href="#PIL.MpoImagePlugin">PIL.MpoImagePlugin</a>
  &#8226;   <a href="#PIL.TiffImagePlugin">PIL.TiffImagePlugin</a>
  &#8226;   <a href="#PIL._binary">PIL._binary</a>
+ &#8226;   <a href="#PIL._deprecate">PIL._deprecate</a>
  &#8226;   <a href="#__future__">__future__</a>
  &#8226;   <a href="#array">array</a>
  &#8226;   <a href="#io">io</a>
@@ -1932,7 +1899,6 @@ imports:
  &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
  &#8226;   <a href="#PIL._binary">PIL._binary</a>
  &#8226;   <a href="#__future__">__future__</a>
- &#8226;   <a href="#io">io</a>
  &#8226;   <a href="#struct">struct</a>
  &#8226;   <a href="#typing">typing</a>
 
@@ -2070,9 +2036,11 @@ imports:
  &#8226;   <a href="#calendar">calendar</a>
  &#8226;   <a href="#codecs">codecs</a>
  &#8226;   <a href="#collections">collections</a>
+ &#8226;   <a href="#gc">gc</a>
  &#8226;   <a href="#mmap">mmap</a>
  &#8226;   <a href="#os">os</a>
  &#8226;   <a href="#re">re</a>
+ &#8226;   <a href="#sys">sys</a>
  &#8226;   <a href="#time">time</a>
  &#8226;   <a href="#typing">typing</a>
  &#8226;   <a href="#zlib">zlib</a>
@@ -2120,7 +2088,6 @@ imports:
  &#8226;   <a href="#PIL.ImagePalette">PIL.ImagePalette</a>
  &#8226;   <a href="#PIL.ImageSequence">PIL.ImageSequence</a>
  &#8226;   <a href="#PIL._binary">PIL._binary</a>
- &#8226;   <a href="#PIL._deprecate">PIL._deprecate</a>
  &#8226;   <a href="#PIL._imaging">PIL._imaging</a>
  &#8226;   <a href="#PIL._util">PIL._util</a>
  &#8226;   <a href="#__future__">__future__</a>
@@ -2381,6 +2348,7 @@ imports:
     <a href="#PIL">PIL</a>
  &#8226;   <a href="#PIL.Image">PIL.Image</a>
  &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
+ &#8226;   <a href="#PIL._binary">PIL._binary</a>
  &#8226;   <a href="#PIL._webp">PIL._webp</a>
  &#8226;   <a href="#__future__">__future__</a>
  &#8226;   <a href="#io">io</a>
@@ -2539,6 +2507,7 @@ imported by:
  &#8226;   <a href="#PIL.SunImagePlugin">PIL.SunImagePlugin</a>
  &#8226;   <a href="#PIL.TgaImagePlugin">PIL.TgaImagePlugin</a>
  &#8226;   <a href="#PIL.TiffImagePlugin">PIL.TiffImagePlugin</a>
+ &#8226;   <a href="#PIL.WebPImagePlugin">PIL.WebPImagePlugin</a>
  &#8226;   <a href="#PIL.WmfImagePlugin">PIL.WmfImagePlugin</a>
  &#8226;   <a href="#PIL.XVThumbImagePlugin">PIL.XVThumbImagePlugin</a>
  &#8226;   <a href="#PIL.XpmImagePlugin">PIL.XpmImagePlugin</a>
@@ -2559,9 +2528,10 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#PIL.Image">PIL.Image</a>
- &#8226;   <a href="#PIL.ImageCms">PIL.ImageCms</a>
- &#8226;   <a href="#PIL.PngImagePlugin">PIL.PngImagePlugin</a>
+    <a href="#PIL.ImImagePlugin">PIL.ImImagePlugin</a>
+ &#8226;   <a href="#PIL.Image">PIL.Image</a>
+ &#8226;   <a href="#PIL.ImageQt">PIL.ImageQt</a>
+ &#8226;   <a href="#PIL.JpegImagePlugin">PIL.JpegImagePlugin</a>
 
   </div>
 
@@ -2623,23 +2593,6 @@ imports:
   <div class="import">
 imported by:
     <a href="#PIL.ImageFont">PIL.ImageFont</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="PIL._imagingmath"></a>
-  <tt>PIL._imagingmath</tt> <span class="moduletype"><tt>C:\Users\misba\AppData\Roaming\Python\Python314\site-packages\PIL\_imagingmath.cp314-win_amd64.pyd</tt></span>  <div class="import">
-imports:
-    <a href="#PIL">PIL</a>
- &#8226;   <a href="#typing">typing</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#PIL">PIL</a>
- &#8226;   <a href="#PIL.ImageMath">PIL.ImageMath</a>
 
   </div>
 
@@ -2861,7 +2814,6 @@ imported by:
  &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
  &#8226;   <a href="#PIL.ImageFilter">PIL.ImageFilter</a>
  &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
- &#8226;   <a href="#PIL.ImageMath">PIL.ImageMath</a>
  &#8226;   <a href="#PIL.ImageMode">PIL.ImageMode</a>
  &#8226;   <a href="#PIL.ImageOps">PIL.ImageOps</a>
  &#8226;   <a href="#PIL.ImagePalette">PIL.ImagePalette</a>
@@ -4138,7 +4090,6 @@ imported by:
   <tt>builtins</tt> <span class="moduletype"><i>(builtin module)</i></span>  <div class="import">
 imported by:
     <a href="#PIL.Image">PIL.Image</a>
- &#8226;   <a href="#PIL.ImageMath">PIL.ImageMath</a>
  &#8226;   <a href="#_py_warnings">_py_warnings</a>
  &#8226;   <a href="#annotationlib">annotationlib</a>
  &#8226;   <a href="#bz2">bz2</a>
@@ -8044,9 +7995,7 @@ imported by:
     <a href="#PIL.GifImagePlugin">PIL.GifImagePlugin</a>
  &#8226;   <a href="#PIL.ImageCms">PIL.ImageCms</a>
  &#8226;   <a href="#PIL.ImageColor">PIL.ImageColor</a>
- &#8226;   <a href="#PIL.ImageFilter">PIL.ImageFilter</a>
  &#8226;   <a href="#PIL.ImageMode">PIL.ImageMode</a>
- &#8226;   <a href="#PIL.ImageOps">PIL.ImageOps</a>
  &#8226;   <a href="#PIL.PsdImagePlugin">PIL.PsdImagePlugin</a>
  &#8226;   <a href="#_py_warnings">_py_warnings</a>
  &#8226;   <a href="#contextlib">contextlib</a>
@@ -8094,7 +8043,8 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#_posixsubprocess">_posixsubprocess</a>
+    <a href="#PIL.PdfParser">PIL.PdfParser</a>
+ &#8226;   <a href="#_posixsubprocess">_posixsubprocess</a>
  &#8226;   <a href="#weakref">weakref</a>
 
   </div>
@@ -8957,7 +8907,6 @@ imported by:
  &#8226;   <a href="#PIL.IptcImagePlugin">PIL.IptcImagePlugin</a>
  &#8226;   <a href="#PIL.Jpeg2KImagePlugin">PIL.Jpeg2KImagePlugin</a>
  &#8226;   <a href="#PIL.JpegImagePlugin">PIL.JpegImagePlugin</a>
- &#8226;   <a href="#PIL.MspImagePlugin">PIL.MspImagePlugin</a>
  &#8226;   <a href="#PIL.PcxImagePlugin">PIL.PcxImagePlugin</a>
  &#8226;   <a href="#PIL.PdfImagePlugin">PIL.PdfImagePlugin</a>
  &#8226;   <a href="#PIL.PngImagePlugin">PIL.PngImagePlugin</a>
@@ -9239,8 +9188,7 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#PIL.Image">PIL.Image</a>
- &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
+    <a href="#PIL.ImageFile">PIL.ImageFile</a>
  &#8226;   <a href="#PIL.PcxImagePlugin">PIL.PcxImagePlugin</a>
  &#8226;   <a href="#PIL.PngImagePlugin">PIL.PngImagePlugin</a>
  &#8226;   <a href="#PIL.TiffImagePlugin">PIL.TiffImagePlugin</a>
@@ -9500,7 +9448,6 @@ imports:
   <div class="import">
 imported by:
     <a href="#PIL.ImageCms">PIL.ImageCms</a>
- &#8226;   <a href="#PIL.ImageOps">PIL.ImageOps</a>
  &#8226;   <a href="#_pydatetime">_pydatetime</a>
  &#8226;   <a href="#collections">collections</a>
  &#8226;   <a href="#copyreg">copyreg</a>
@@ -9550,7 +9497,6 @@ imported by:
  &#8226;   <a href="#PIL.BufrStubImagePlugin">PIL.BufrStubImagePlugin</a>
  &#8226;   <a href="#PIL.EpsImagePlugin">PIL.EpsImagePlugin</a>
  &#8226;   <a href="#PIL.FliImagePlugin">PIL.FliImagePlugin</a>
- &#8226;   <a href="#PIL.GifImagePlugin">PIL.GifImagePlugin</a>
  &#8226;   <a href="#PIL.GribStubImagePlugin">PIL.GribStubImagePlugin</a>
  &#8226;   <a href="#PIL.Hdf5StubImagePlugin">PIL.Hdf5StubImagePlugin</a>
  &#8226;   <a href="#PIL.IcnsImagePlugin">PIL.IcnsImagePlugin</a>
@@ -11062,7 +11008,6 @@ imports:
   <div class="import">
 imported by:
     <a href="#PIL.EpsImagePlugin">PIL.EpsImagePlugin</a>
- &#8226;   <a href="#PIL.GifImagePlugin">PIL.GifImagePlugin</a>
  &#8226;   <a href="#PIL.ImageShow">PIL.ImageShow</a>
  &#8226;   <a href="#PIL.JpegImagePlugin">PIL.JpegImagePlugin</a>
  &#8226;   <a href="#_aix_support">_aix_support</a>
@@ -11088,6 +11033,7 @@ imported by:
  &#8226;   <a href="#PIL.ImageQt">PIL.ImageQt</a>
  &#8226;   <a href="#PIL.ImageShow">PIL.ImageShow</a>
  &#8226;   <a href="#PIL.JpegImagePlugin">PIL.JpegImagePlugin</a>
+ &#8226;   <a href="#PIL.PdfParser">PIL.PdfParser</a>
  &#8226;   <a href="#PIL.SpiderImagePlugin">PIL.SpiderImagePlugin</a>
  &#8226;   <a href="#PIL._imagingcms">PIL._imagingcms</a>
  &#8226;   <a href="#PIL._typing">PIL._typing</a>
@@ -11397,6 +11343,7 @@ imports:
  &#8226;   <a href="#sys">sys</a>
  &#8226;   <a href="#tkinter.colorchooser">tkinter.colorchooser</a>
  &#8226;   <a href="#tkinter.constants">tkinter.constants</a>
+ &#8226;   <a href="#tkinter.messagebox">tkinter.messagebox</a>
  &#8226;   <a href="#tkinter.ttk">tkinter.ttk</a>
  &#8226;   <a href="#traceback">traceback</a>
  &#8226;   <a href="#types">types</a>
@@ -11409,6 +11356,7 @@ imported by:
  &#8226;   <a href="#tkinter.colorchooser">tkinter.colorchooser</a>
  &#8226;   <a href="#tkinter.commondialog">tkinter.commondialog</a>
  &#8226;   <a href="#tkinter.constants">tkinter.constants</a>
+ &#8226;   <a href="#tkinter.messagebox">tkinter.messagebox</a>
  &#8226;   <a href="#tkinter.ttk">tkinter.ttk</a>
 
   </div>
@@ -11444,6 +11392,7 @@ imports:
   <div class="import">
 imported by:
     <a href="#tkinter.colorchooser">tkinter.colorchooser</a>
+ &#8226;   <a href="#tkinter.messagebox">tkinter.messagebox</a>
 
   </div>
 
@@ -11460,6 +11409,24 @@ imports:
   <div class="import">
 imported by:
     <a href="#tkinter">tkinter</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="tkinter.messagebox"></a>
+  <a target="code" href="///C:/Python314/Lib/tkinter/messagebox.py" type="text/plain"><tt>tkinter.messagebox</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#tkinter">tkinter</a>
+ &#8226;   <a href="#tkinter.commondialog">tkinter.commondialog</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#netmeter.py">netmeter.py</a>
+ &#8226;   <a href="#tkinter">tkinter</a>
 
   </div>
 
@@ -11595,11 +11562,9 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#PIL.Image">PIL.Image</a>
- &#8226;   <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
+    <a href="#PIL.ImageDraw">PIL.ImageDraw</a>
  &#8226;   <a href="#PIL.ImageFilter">PIL.ImageFilter</a>
  &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
- &#8226;   <a href="#PIL.ImageMath">PIL.ImageMath</a>
  &#8226;   <a href="#PIL._typing">PIL._typing</a>
  &#8226;   <a href="#_py_warnings">_py_warnings</a>
  &#8226;   <a href="#_weakrefset">_weakrefset</a>
@@ -11680,11 +11645,11 @@ imported by:
  &#8226;   <a href="#PIL.ImageFile">PIL.ImageFile</a>
  &#8226;   <a href="#PIL.ImageFilter">PIL.ImageFilter</a>
  &#8226;   <a href="#PIL.ImageFont">PIL.ImageFont</a>
- &#8226;   <a href="#PIL.ImageMath">PIL.ImageMath</a>
  &#8226;   <a href="#PIL.ImageMode">PIL.ImageMode</a>
  &#8226;   <a href="#PIL.ImageOps">PIL.ImageOps</a>
  &#8226;   <a href="#PIL.ImagePalette">PIL.ImagePalette</a>
  &#8226;   <a href="#PIL.ImageQt">PIL.ImageQt</a>
+ &#8226;   <a href="#PIL.ImageSequence">PIL.ImageSequence</a>
  &#8226;   <a href="#PIL.ImageShow">PIL.ImageShow</a>
  &#8226;   <a href="#PIL.ImageText">PIL.ImageText</a>
  &#8226;   <a href="#PIL.ImageTk">PIL.ImageTk</a>
@@ -11714,7 +11679,6 @@ imported by:
  &#8226;   <a href="#PIL._imaging">PIL._imaging</a>
  &#8226;   <a href="#PIL._imagingcms">PIL._imagingcms</a>
  &#8226;   <a href="#PIL._imagingft">PIL._imagingft</a>
- &#8226;   <a href="#PIL._imagingmath">PIL._imagingmath</a>
  &#8226;   <a href="#PIL._imagingtk">PIL._imagingtk</a>
  &#8226;   <a href="#PIL._typing">PIL._typing</a>
  &#8226;   <a href="#PIL._util">PIL._util</a>
@@ -12391,7 +12355,8 @@ imported by:
   <a name="zlib"></a>
   <tt>zlib</tt> <span class="moduletype"><i>(builtin module)</i></span>  <div class="import">
 imported by:
-    <a href="#PIL.PdfParser">PIL.PdfParser</a>
+    <a href="#PIL.FitsImagePlugin">PIL.FitsImagePlugin</a>
+ &#8226;   <a href="#PIL.PdfParser">PIL.PdfParser</a>
  &#8226;   <a href="#PIL.PngImagePlugin">PIL.PngImagePlugin</a>
  &#8226;   <a href="#encodings.zlib_codec">encodings.zlib_codec</a>
  &#8226;   <a href="#gzip">gzip</a>

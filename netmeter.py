@@ -35,11 +35,11 @@ import sys
 import csv
 import threading
 from collections import deque
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 import psutil
 import tkinter as tk
-from tkinter import ttk, colorchooser
+from tkinter import ttk, colorchooser, messagebox
 
 if sys.platform == "win32":
     import winreg
@@ -56,15 +56,30 @@ except Exception:
     # `pip install pystray pillow` this will succeed normally.
     TRAY_AVAILABLE = False
 
+# The window/taskbar icon only needs Pillow (not a tray backend).
+try:
+    from PIL import Image, ImageDraw, ImageTk
+    ICON_AVAILABLE = True
+except Exception:
+    ICON_AVAILABLE = False
+
 
 # --------------------------------------------------------------------------
 # Config / persistence
 # --------------------------------------------------------------------------
 
 APP_NAME = "NetMeter"
-CONFIG_DIR = os.path.join(
-    os.environ.get("APPDATA", os.path.expanduser("~")), APP_NAME
-)
+
+if sys.platform == "win32":
+    CONFIG_DIR = os.path.join(
+        os.environ.get("APPDATA", os.path.expanduser("~")), APP_NAME
+    )
+else:
+    # Linux/macOS: follow the XDG base directory convention
+    # (~/.config/NetMeter), same spirit as %APPDATA% on Windows.
+    xdg_config = os.environ.get("XDG_CONFIG_HOME", os.path.join(os.path.expanduser("~"), ".config"))
+    CONFIG_DIR = os.path.join(xdg_config, APP_NAME)
+
 CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
 LOG_FILE = os.path.join(CONFIG_DIR, "daily_usage.csv")
 
@@ -117,60 +132,128 @@ def save_config(cfg):
 
 
 # --------------------------------------------------------------------------
-# "Start with Windows" support (HKCU Run key -- no admin rights needed)
+# "Start at login" support
+#   - Windows: HKCU Run registry key (no admin rights needed)
+#   - Linux:   XDG autostart .desktop file in ~/.config/autostart
+#   - macOS:   not implemented (falls through to "unsupported")
 # --------------------------------------------------------------------------
 
 RUN_KEY_PATH = r"Software\Microsoft\Windows\CurrentVersion\Run"
 
+AUTOSTART_DIR = os.path.join(
+    os.environ.get("XDG_CONFIG_HOME", os.path.join(os.path.expanduser("~"), ".config")),
+    "autostart",
+)
+AUTOSTART_DESKTOP_FILE = os.path.join(AUTOSTART_DIR, "netmeter.desktop")
 
-def _startup_command():
-    """Build the command line used to auto-launch NetMeter at logon."""
+STARTUP_SUPPORTED = sys.platform == "win32" or sys.platform.startswith("linux")
+
+
+def _startup_launch_command():
+    """Build the command line used to auto-launch NetMeter at login."""
     if getattr(sys, "frozen", False):
-        # Built with PyInstaller (--onefile/--windowed) -> just the .exe
+        # Built with PyInstaller (--onefile/--windowed) -> just the binary
         return f'"{sys.executable}"'
-    # Running as a plain .py script -> launch with pythonw.exe so no
-    # console window pops up at logon.
-    py_dir = os.path.dirname(sys.executable)
-    pythonw = os.path.join(py_dir, "pythonw.exe")
-    if not os.path.exists(pythonw):
-        pythonw = sys.executable  # fallback if pythonw isn't found
+
     script = os.path.abspath(__file__)
-    return f'"{pythonw}" "{script}"'
+
+    if sys.platform == "win32":
+        # Launch with pythonw.exe so no console window pops up at logon.
+        py_dir = os.path.dirname(sys.executable)
+        pythonw = os.path.join(py_dir, "pythonw.exe")
+        if not os.path.exists(pythonw):
+            pythonw = sys.executable  # fallback if pythonw isn't found
+        return f'"{pythonw}" "{script}"'
+
+    # Linux: run with the same interpreter currently running us.
+    return f'"{sys.executable}" "{script}"'
 
 
 def is_startup_enabled():
-    """Check the actual registry state (source of truth, not just cfg)."""
-    if winreg is None:
-        return False
-    try:
-        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY_PATH, 0, winreg.KEY_READ) as key:
-            winreg.QueryValueEx(key, APP_NAME)
-            return True
-    except OSError:
-        return False
+    """Check the actual OS-level state (source of truth, not just cfg)."""
+    if sys.platform == "win32":
+        if winreg is None:
+            return False
+        try:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY_PATH, 0, winreg.KEY_READ) as key:
+                winreg.QueryValueEx(key, APP_NAME)
+                return True
+        except OSError:
+            return False
+
+    if sys.platform.startswith("linux"):
+        return os.path.exists(AUTOSTART_DESKTOP_FILE)
+
+    return False
 
 
 def set_startup_enabled(enable):
-    """Add/remove the HKCU Run key entry that starts NetMeter at logon."""
-    if winreg is None:
+    """Add/remove the OS-level entry that starts NetMeter at login."""
+    if sys.platform == "win32":
+        if winreg is None:
+            return
+        try:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY_PATH, 0, winreg.KEY_SET_VALUE) as key:
+                if enable:
+                    winreg.SetValueEx(key, APP_NAME, 0, winreg.REG_SZ, _startup_launch_command())
+                else:
+                    try:
+                        winreg.DeleteValue(key, APP_NAME)
+                    except FileNotFoundError:
+                        pass
+        except OSError as e:
+            print(f"[NetMeter] Could not update startup registry entry: {e}")
         return
-    try:
-        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY_PATH, 0, winreg.KEY_SET_VALUE) as key:
+
+    if sys.platform.startswith("linux"):
+        try:
             if enable:
-                winreg.SetValueEx(key, APP_NAME, 0, winreg.REG_SZ, _startup_command())
+                os.makedirs(AUTOSTART_DIR, exist_ok=True)
+                content = (
+                    "[Desktop Entry]\n"
+                    "Type=Application\n"
+                    f"Name={APP_NAME}\n"
+                    f"Exec={_startup_launch_command()}\n"
+                    "X-GNOME-Autostart-enabled=true\n"
+                    "NoDisplay=false\n"
+                    "Terminal=false\n"
+                    "Comment=Live network speed graph and bandwidth monitor\n"
+                )
+                with open(AUTOSTART_DESKTOP_FILE, "w") as f:
+                    f.write(content)
+                os.chmod(AUTOSTART_DESKTOP_FILE, 0o755)
             else:
+                if os.path.exists(AUTOSTART_DESKTOP_FILE):
+                    os.remove(AUTOSTART_DESKTOP_FILE)
+        except OSError as e:
+            print(f"[NetMeter] Could not update autostart entry: {e}")
+
+
+def read_usage_history():
+    """Return [(date_str, down_bytes, up_bytes), ...] from the usage CSV."""
+    rows = []
+    if not os.path.exists(LOG_FILE):
+        return rows
+    try:
+        with open(LOG_FILE, "r", newline="") as f:
+            for r in csv.reader(f):
+                if len(r) < 3 or r[0] == "date":
+                    continue
                 try:
-                    winreg.DeleteValue(key, APP_NAME)
-                except FileNotFoundError:
-                    pass
-    except OSError as e:
-        print(f"[NetMeter] Could not update startup registry entry: {e}")
+                    rows.append((r[0], int(r[1]), int(r[2])))
+                except ValueError:
+                    continue
+    except OSError:
+        pass
+    rows.sort(key=lambda r: r[0])
+    return rows
 
 
-def log_daily_usage(down_total, up_total):
-    """Append/update today's row in the usage CSV."""
+def log_daily_usage(down_total, up_total, day=None):
+    """Append/update a day's row (default: today) in the usage CSV.
+    down_total/up_total must be the FULL totals for that day."""
     ensure_config_dir()
-    today = date.today().isoformat()
+    today = day or date.today().isoformat()
     rows = []
     if os.path.exists(LOG_FILE):
         try:
@@ -298,12 +381,13 @@ class NetworkSampler:
 # --------------------------------------------------------------------------
 
 class MeterWidget:
-    def __init__(self, root, cfg, sampler, on_close, on_open_settings=None):
+    def __init__(self, root, cfg, sampler, on_close, on_open_settings=None, on_open_stats=None):
         self.root = root
         self.cfg = cfg
         self.sampler = sampler
         self.on_close = on_close
         self.on_open_settings = on_open_settings
+        self.on_open_stats = on_open_stats
 
         self.win = tk.Toplevel(root)
         self.win.overrideredirect(True)         # no title bar / borders
@@ -354,6 +438,7 @@ class MeterWidget:
         self.menu.add_command(label="Snap: Top-Left", command=lambda: self._snap("tl"))
         self.menu.add_command(label="Snap: Bottom-Left", command=lambda: self._snap("bl"))
         self.menu.add_separator()
+        self.menu.add_command(label="Usage statistics...", command=self._open_stats)
         self.menu.add_command(label="Settings...", command=self._open_settings)
         self.menu.add_command(label="Hide (tray icon keeps running)", command=self._hide)
         self.menu.add_command(label="Quit NetMeter", command=self.on_close)
@@ -361,6 +446,10 @@ class MeterWidget:
     def _open_settings(self):
         if self.on_open_settings:
             self.on_open_settings()
+
+    def _open_stats(self):
+        if self.on_open_stats:
+            self.on_open_stats()
 
     def _snap(self, corner):
         sw = self.root.winfo_screenwidth()
@@ -619,16 +708,18 @@ class SettingsWindow:
         frame_startup.grid(row=2, column=0, sticky="ew", **pad)
 
         self.startup_var = tk.BooleanVar(value=is_startup_enabled())
-        ttk.Checkbutton(
-            frame_startup, text="Start NetMeter when Windows starts",
-            variable=self.startup_var
-        ).grid(row=0, column=0, sticky="w", padx=6, pady=4)
-
-        if winreg is None:
-            ttk.Label(
-                frame_startup, text="(Windows only -- not available on this OS)",
-                foreground="#888"
-            ).grid(row=1, column=0, sticky="w", padx=6, pady=(0, 4))
+        self.startup_var.set(is_startup_enabled() if STARTUP_SUPPORTED else False)
+        startup_label = (
+            "Start NetMeter when I log in"
+            if STARTUP_SUPPORTED else
+            "Start NetMeter when I log in (unsupported on this OS)"
+        )
+        startup_check = ttk.Checkbutton(
+            frame_startup, text=startup_label, variable=self.startup_var
+        )
+        startup_check.grid(row=0, column=0, sticky="w", padx=6, pady=4)
+        if not STARTUP_SUPPORTED:
+            startup_check.state(["disabled"])
 
         # --- Colors -------------------------------------------------------
         frame_color = ttk.LabelFrame(self.win, text="Colors")
@@ -694,24 +785,339 @@ class SettingsWindow:
 
 
 # --------------------------------------------------------------------------
+# Traffic usage statistics window
+# --------------------------------------------------------------------------
+
+class StatsWindow:
+    """Shows today / 7-day / month / all-time totals, a 30-day bar chart
+    and a per-day history table. Refreshes itself every couple of seconds."""
+
+    def __init__(self, root, cfg, app):
+        self.cfg = cfg
+        self.app = app
+        self._iids = {}
+
+        self.win = tk.Toplevel(root)
+        self.win.title("NetMeter - Traffic Usage Statistics")
+        self.win.geometry("680x680")
+        self.win.minsize(560, 560)
+
+        # --- Buttons (packed first so they stay visible at the bottom) -----
+        btns = ttk.Frame(self.win)
+        btns.pack(side="bottom", fill="x", padx=10, pady=(4, 10))
+        ttk.Button(btns, text="Clear history...", command=self._clear).pack(side="left")
+        ttk.Button(btns, text="Close", command=self.win.destroy).pack(side="right")
+
+        notebook = ttk.Notebook(self.win)
+        notebook.pack(fill="both", expand=True, padx=4, pady=(6, 0))
+        tab_daily = ttk.Frame(notebook)
+        tab_monthly = ttk.Frame(notebook)
+        notebook.add(tab_daily, text="  Daily  ")
+        notebook.add(tab_monthly, text="  Monthly  ")
+
+        # --- Summary -----------------------------------------------------
+        summary = ttk.LabelFrame(tab_daily, text="Summary")
+        summary.pack(fill="x", padx=10, pady=(10, 4))
+        self.sum_tree = ttk.Treeview(
+            summary, columns=("period", "down", "up", "total"),
+            show="headings", height=6
+        )
+        for col, text, width in (
+            ("period", "Period", 170), ("down", "Downloaded", 150),
+            ("up", "Uploaded", 150), ("total", "Total", 150),
+        ):
+            self.sum_tree.heading(col, text=text)
+            self.sum_tree.column(col, width=width, anchor="w" if col == "period" else "e")
+        self.sum_tree.pack(fill="x", padx=6, pady=6)
+
+        # --- Chart -------------------------------------------------------
+        chart_frame = ttk.LabelFrame(tab_daily, text="Last 30 days  (cyan = download, orange = upload)")
+        chart_frame.pack(fill="x", padx=10, pady=4)
+        self.chart = tk.Canvas(chart_frame, height=170, bg=cfg["bg_color"], highlightthickness=0)
+        self.chart.pack(fill="x", padx=6, pady=6)
+        self.chart.bind("<Configure>", lambda e: self._draw_chart())
+
+        # --- History table -----------------------------------------------
+        hist = ttk.LabelFrame(tab_daily, text="Daily history")
+        hist.pack(fill="both", expand=True, padx=10, pady=4)
+        self.hist_tree = ttk.Treeview(
+            hist, columns=("date", "down", "up", "total"), show="headings"
+        )
+        for col, text, width in (
+            ("date", "Date", 120), ("down", "Downloaded", 150),
+            ("up", "Uploaded", 150), ("total", "Total", 150),
+        ):
+            self.hist_tree.heading(col, text=text)
+            self.hist_tree.column(col, width=width, anchor="w" if col == "date" else "e")
+        scroll = ttk.Scrollbar(hist, command=self.hist_tree.yview)
+        self.hist_tree.configure(yscrollcommand=scroll.set)
+        scroll.pack(side="right", fill="y", pady=6)
+        self.hist_tree.pack(side="left", fill="both", expand=True, padx=(6, 0), pady=6)
+
+        # --- Monthly tab -------------------------------------------------
+        mchart_frame = ttk.LabelFrame(
+            tab_monthly, text="Last 12 months  (cyan = download, orange = upload)"
+        )
+        mchart_frame.pack(fill="x", padx=10, pady=(10, 4))
+        self.mchart = tk.Canvas(mchart_frame, height=190, bg=cfg["bg_color"], highlightthickness=0)
+        self.mchart.pack(fill="x", padx=6, pady=6)
+        self.mchart.bind("<Configure>", lambda e: self._draw_month_chart())
+
+        mtable = ttk.LabelFrame(tab_monthly, text="Monthly totals")
+        mtable.pack(fill="both", expand=True, padx=10, pady=4)
+        self.month_tree = ttk.Treeview(
+            mtable, columns=("month", "days", "down", "up", "total"), show="headings"
+        )
+        for col, text, width, anchor in (
+            ("month", "Month", 110, "w"), ("days", "Days recorded", 100, "e"),
+            ("down", "Downloaded", 130, "e"), ("up", "Uploaded", 130, "e"),
+            ("total", "Total", 130, "e"),
+        ):
+            self.month_tree.heading(col, text=text)
+            self.month_tree.column(col, width=width, anchor=anchor)
+        mscroll = ttk.Scrollbar(mtable, command=self.month_tree.yview)
+        self.month_tree.configure(yscrollcommand=mscroll.set)
+        mscroll.pack(side="right", fill="y", pady=6)
+        self.month_tree.pack(side="left", fill="both", expand=True, padx=(6, 0), pady=6)
+        self._month_iids = {}
+
+        self.rows = []
+        self._refresh()
+
+    # -- helpers ----------------------------------------------------------
+    def _clear(self):
+        if messagebox.askyesno(
+            "Clear history",
+            "Delete all saved daily usage history?\nThis cannot be undone.",
+            parent=self.win,
+        ):
+            self.app.clear_history()
+            self._iids = {}
+            self.hist_tree.delete(*self.hist_tree.get_children())
+            self._refresh(reschedule=False)
+
+    def _update_summary(self):
+        today = date.today()
+        month_prefix = today.strftime("%Y-%m")
+        week_start = (today - timedelta(days=6)).isoformat()
+        prev = (today.replace(day=1) - timedelta(days=1))
+        prev_prefix = prev.strftime("%Y-%m")
+
+        def total(pred):
+            d = sum(r[1] for r in self.rows if pred(r[0]))
+            u = sum(r[2] for r in self.rows if pred(r[0]))
+            return d, u
+
+        n_days = max(1, len(self.rows))
+        all_d, all_u = total(lambda k: True)
+        entries = [
+            ("Today", total(lambda k: k == today.isoformat())),
+            ("Last 7 days", total(lambda k: k >= week_start)),
+            ("This month", total(lambda k: k.startswith(month_prefix))),
+            ("Last month", total(lambda k: k.startswith(prev_prefix))),
+            ("All recorded time", (all_d, all_u)),
+            (f"Daily average ({len(self.rows)} day{'s' if len(self.rows) != 1 else ''})",
+             (all_d // n_days, all_u // n_days)),
+        ]
+        self.sum_tree.delete(*self.sum_tree.get_children())
+        for label, (d, u) in entries:
+            self.sum_tree.insert(
+                "", "end",
+                values=(label, format_bytes(d), format_bytes(u), format_bytes(d + u))
+            )
+
+    def _update_history(self):
+        newest_first = sorted(self.rows, key=lambda r: r[0], reverse=True)
+        dates = [r[0] for r in newest_first]
+        if set(dates) != set(self._iids):
+            # A day was added/removed -> rebuild (rare: once per day)
+            self.hist_tree.delete(*self.hist_tree.get_children())
+            self._iids = {}
+            for r in newest_first:
+                self._iids[r[0]] = self.hist_tree.insert("", "end", values=self._fmt_row(r))
+        else:
+            # Same days -> update values in place so scroll position is kept
+            for r in newest_first:
+                self.hist_tree.item(self._iids[r[0]], values=self._fmt_row(r))
+
+    @staticmethod
+    def _fmt_row(r):
+        return (r[0], format_bytes(r[1]), format_bytes(r[2]), format_bytes(r[1] + r[2]))
+
+    def _draw_chart(self):
+        c = self.chart
+        cfg = self.cfg
+        c.delete("all")
+        c.configure(bg=cfg["bg_color"])
+        w = max(300, c.winfo_width())
+        h = int(c["height"])
+        left, right, top, bottom = 62, 8, 10, 20
+
+        today = date.today()
+        days = [(today - timedelta(days=29 - i)) for i in range(30)]
+        by_date = {r[0]: (r[1], r[2]) for r in self.rows}
+        series = [by_date.get(d.isoformat(), (0, 0)) for d in days]
+        peak = max([max(d, u) for d, u in series] + [1024])
+
+        plot_h = h - top - bottom
+        plot_w = w - left - right
+        c.create_line(left, top, w - right, top, fill=cfg["grid_color"])
+        c.create_line(left, top + plot_h / 2, w - right, top + plot_h / 2, fill=cfg["grid_color"])
+        c.create_line(left, top + plot_h, w - right, top + plot_h, fill=cfg["grid_color"])
+        c.create_text(left - 6, top, text=format_bytes(peak), anchor="e",
+                      fill=cfg["text_color"], font=("Segoe UI", 8))
+        c.create_text(left - 6, top + plot_h / 2, text=format_bytes(peak / 2), anchor="e",
+                      fill=cfg["text_color"], font=("Segoe UI", 8))
+        c.create_text(left - 6, top + plot_h, text="0", anchor="e",
+                      fill=cfg["text_color"], font=("Segoe UI", 8))
+
+        group_w = plot_w / 30.0
+        bar_w = max(2, group_w * 0.38)
+        for i, (d, u) in enumerate(series):
+            x0 = left + i * group_w + group_w * 0.1
+            for j, (val, color) in enumerate(((d, cfg["down_color"]), (u, cfg["up_color"]))):
+                bh = (val / peak) * plot_h
+                if bh > 0:
+                    bx = x0 + j * bar_w
+                    c.create_rectangle(bx, top + plot_h - bh, bx + bar_w - 1,
+                                       top + plot_h, fill=color, outline="")
+        c.create_text(left, h - 4, text=days[0].strftime("%b %d"), anchor="sw",
+                      fill=cfg["text_color"], font=("Segoe UI", 8))
+        c.create_text(w - right, h - 4, text=days[-1].strftime("%b %d"), anchor="se",
+                      fill=cfg["text_color"], font=("Segoe UI", 8))
+
+    def _monthly(self):
+        """Group the daily rows by month -> {'YYYY-MM': [down, up, days]}."""
+        months = {}
+        for d, dn, up in self.rows:
+            m = months.setdefault(d[:7], [0, 0, 0])
+            m[0] += dn
+            m[1] += up
+            m[2] += 1
+        return months
+
+    @staticmethod
+    def _month_label(key, short=False):
+        try:
+            y, m = key.split("-")
+            return date(int(y), int(m), 1).strftime("%b" if short else "%b %Y")
+        except (ValueError, TypeError):
+            return key
+
+    def _update_monthly(self):
+        months = self._monthly()
+        keys = sorted(months, reverse=True)
+
+        def vals(k):
+            dn, up, n = months[k]
+            return (self._month_label(k), n, format_bytes(dn), format_bytes(up),
+                    format_bytes(dn + up))
+
+        if set(keys) != set(self._month_iids):
+            self.month_tree.delete(*self.month_tree.get_children())
+            self._month_iids = {}
+            for k in keys:
+                self._month_iids[k] = self.month_tree.insert("", "end", values=vals(k))
+        else:
+            for k in keys:
+                self.month_tree.item(self._month_iids[k], values=vals(k))
+
+    def _draw_month_chart(self):
+        c = self.mchart
+        cfg = self.cfg
+        c.delete("all")
+        c.configure(bg=cfg["bg_color"])
+        w = max(300, c.winfo_width())
+        h = int(c["height"])
+        left, right, top, bottom = 62, 8, 10, 22
+
+        today = date.today()
+        keys = []
+        y, m = today.year, today.month
+        for _ in range(12):
+            keys.append(f"{y:04d}-{m:02d}")
+            m -= 1
+            if m == 0:
+                y, m = y - 1, 12
+        keys.reverse()
+
+        months = self._monthly()
+        series = [tuple(months.get(k, [0, 0, 0])[:2]) for k in keys]
+        peak = max([max(d, u) for d, u in series] + [1024])
+
+        plot_h = h - top - bottom
+        plot_w = w - left - right
+        for frac in (0, 0.5, 1):
+            gy = top + plot_h * frac
+            c.create_line(left, gy, w - right, gy, fill=cfg["grid_color"])
+        c.create_text(left - 6, top, text=format_bytes(peak), anchor="e",
+                      fill=cfg["text_color"], font=("Segoe UI", 8))
+        c.create_text(left - 6, top + plot_h / 2, text=format_bytes(peak / 2), anchor="e",
+                      fill=cfg["text_color"], font=("Segoe UI", 8))
+        c.create_text(left - 6, top + plot_h, text="0", anchor="e",
+                      fill=cfg["text_color"], font=("Segoe UI", 8))
+
+        group_w = plot_w / 12.0
+        bar_w = max(3, group_w * 0.34)
+        for i, (k, (d, u)) in enumerate(zip(keys, series)):
+            x0 = left + i * group_w + group_w * 0.15
+            for j, (val, color) in enumerate(((d, cfg["down_color"]), (u, cfg["up_color"]))):
+                bh = (val / peak) * plot_h
+                if bh > 0:
+                    bx = x0 + j * bar_w
+                    c.create_rectangle(bx, top + plot_h - bh, bx + bar_w - 1,
+                                       top + plot_h, fill=color, outline="")
+            label = self._month_label(k, short=True)
+            if i == 0 or k.endswith("-01"):
+                label += " '" + k[2:4]
+            c.create_text(left + i * group_w + group_w / 2, h - 4, text=label,
+                          anchor="s", fill=cfg["text_color"], font=("Segoe UI", 8))
+
+    def _refresh(self, reschedule=True):
+        if not self.win.winfo_exists():
+            return
+        self.rows = self.app.usage_rows()
+        self._update_summary()
+        self._update_history()
+        self._draw_chart()
+        self._update_monthly()
+        self._draw_month_chart()
+        if reschedule:
+            self.win.after(2000, self._refresh)
+
+
+# --------------------------------------------------------------------------
 # System tray icon
 # --------------------------------------------------------------------------
 
-def make_tray_image(color="#00d4ff"):
-    img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+def make_app_icon(size=64):
+    """Draw the NetMeter icon (cyan down arrow + orange up arrow) in code,
+    so it works inside a PyInstaller exe with no image file needed."""
+    big = 256
+    img = Image.new("RGBA", (big, big), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    d.ellipse((4, 4, 60, 60), fill=color)
-    d.polygon([(20, 40), (32, 24), (44, 40)], fill="#0c0c0f")  # up arrow
+    d.ellipse((8, 8, 248, 248), fill="#0c0c0f", outline="#00d4ff", width=10)
+    d.polygon([(90, 90), (90, 150), (70, 150), (100, 190), (130, 150), (110, 150), (110, 90)],
+              fill="#00d4ff")
+    d.polygon([(146, 190), (146, 130), (126, 130), (156, 90), (186, 130), (166, 130), (166, 190)],
+              fill="#ff7a45")
+    if size != big:
+        img = img.resize((size, size), Image.LANCZOS)
     return img
 
 
+def make_tray_image():
+    return make_app_icon(64)
+
+
 class TrayIcon:
-    def __init__(self, sampler, on_show, on_hide, on_connections, on_settings, on_quit):
+    def __init__(self, sampler, on_show, on_hide, on_connections, on_settings, on_stats, on_quit):
         self.sampler = sampler
         self.on_show = on_show
         self.on_hide = on_hide
         self.on_connections = on_connections
         self.on_settings = on_settings
+        self.on_stats = on_stats
         self.on_quit = on_quit
         self.icon = None
 
@@ -720,6 +1126,7 @@ class TrayIcon:
             pystray.MenuItem("Show widget", lambda: self.on_show()),
             pystray.MenuItem("Hide widget", lambda: self.on_hide()),
             pystray.MenuItem("Active connections...", lambda: self.on_connections()),
+            pystray.MenuItem("Usage statistics...", lambda: self.on_stats()),
             pystray.MenuItem("Settings...", lambda: self.on_settings()),
             pystray.MenuItem("Quit", lambda: self.on_quit()),
         )
@@ -730,10 +1137,21 @@ class TrayIcon:
         if not self.icon:
             return
         data = self.sampler.snapshot()
-        self.icon.title = (
-            f"NetMeter  \u2193{format_speed(data['down_speed'])}"
-            f"  \u2191{format_speed(data['up_speed'])}"
+        # Plain ASCII on purpose: on Linux/X11, pystray sets the tray
+        # tooltip via the WM_NAME property, which only supports Latin-1 --
+        # Unicode arrows there raise UnicodeEncodeError and crash the
+        # update loop. Windows/macOS backends would be fine with Unicode,
+        # but ASCII keeps this one code path safe everywhere.
+        title = (
+            f"NetMeter  D:{format_speed(data['down_speed'])}"
+            f"  U:{format_speed(data['up_speed'])}"
         )
+        try:
+            self.icon.title = title
+        except Exception:
+            # Tray backend hiccups (e.g. no systray manager running, or a
+            # transient X11 error) shouldn't take down the whole app.
+            pass
 
     def run(self):
         self.build()
@@ -753,18 +1171,23 @@ class NetMeterApp:
         self.cfg = load_config()
         self.root = tk.Tk()
         self.root.withdraw()  # no main window, just the overlay + tray
+        self._set_app_icon()
 
         self.sampler = NetworkSampler(
             history_len=self.cfg["history_len"], interval_ms=self.cfg["update_ms"]
         )
         self.sampler.start()
 
+        self._load_day_baseline()
+
         self.widget = MeterWidget(
             self.root, self.cfg, self.sampler, self.quit,
             on_open_settings=self.open_settings,
+            on_open_stats=self.open_stats,
         )
         self.connections_win = None
         self.settings_win = None
+        self.stats_win = None
 
         self.tray = None
         if TRAY_AVAILABLE:
@@ -772,8 +1195,9 @@ class NetMeterApp:
                 self.sampler,
                 on_show=self.widget.show,
                 on_hide=lambda: self.widget._hide(),
-                on_connections=self.open_connections,
+                on_connections=lambda: self.root.after(0, self.open_connections),
                 on_settings=lambda: self.root.after(0, self.open_settings),
+                on_stats=lambda: self.root.after(0, self.open_stats),
                 on_quit=self.quit,
             )
             threading.Thread(target=self.tray.run, daemon=True).start()
@@ -786,15 +1210,80 @@ class NetMeterApp:
 
         self._tick_logger()
 
+    def _set_app_icon(self):
+        """Replace Tk's default feather icon on every NetMeter window
+        (taskbar + title bars of Settings/Statistics/Connections)."""
+        if not ICON_AVAILABLE:
+            return
+        try:
+            self._icon_photos = [ImageTk.PhotoImage(make_app_icon(sz)) for sz in (256, 64, 32)]
+            self.root.iconphoto(True, *self._icon_photos)  # True = all future Toplevels too
+        except Exception:
+            pass
+
     def _tick_tray(self):
         if self.tray:
             self.tray.update_tooltip()
         self.root.after(1000, self._tick_tray)
 
+    # -- daily usage accounting ------------------------------------------
+    # The sampler only knows bytes since this launch. To keep true per-day
+    # totals across restarts and midnight, we remember what the CSV already
+    # held for today (base) and the sampler's counter at day start (offset).
+    def _load_day_baseline(self):
+        self.day = date.today()
+        self.base_down = self.base_up = 0
+        for d, dn, up in read_usage_history():
+            if d == self.day.isoformat():
+                self.base_down, self.base_up = dn, up
+        snap = self.sampler.snapshot()
+        self.offset_down = snap["session_down"]
+        self.offset_up = snap["session_up"]
+
+    def today_totals(self):
+        snap = self.sampler.snapshot()
+        if date.today() != self.day:
+            # Midnight passed: save the finished day, start a fresh one.
+            log_daily_usage(
+                self.base_down + snap["session_down"] - self.offset_down,
+                self.base_up + snap["session_up"] - self.offset_up,
+                day=self.day.isoformat(),
+            )
+            self.day = date.today()
+            self.base_down = self.base_up = 0
+            self.offset_down = snap["session_down"]
+            self.offset_up = snap["session_up"]
+        return (
+            self.base_down + snap["session_down"] - self.offset_down,
+            self.base_up + snap["session_up"] - self.offset_up,
+        )
+
+    def usage_rows(self):
+        """History from disk with today's row replaced by live numbers."""
+        today_d, today_u = self.today_totals()
+        rows = {d: (dn, up) for d, dn, up in read_usage_history()}
+        rows[self.day.isoformat()] = (today_d, today_u)
+        return sorted((d, v[0], v[1]) for d, v in rows.items())
+
+    def clear_history(self):
+        try:
+            if os.path.exists(LOG_FILE):
+                os.remove(LOG_FILE)
+        except OSError:
+            pass
+        self._load_day_baseline()
+        self.base_down = self.base_up = 0
+
     def _tick_logger(self):
-        data = self.sampler.snapshot()
-        log_daily_usage(data["session_down"], data["session_up"])
+        down, up = self.today_totals()
+        log_daily_usage(down, up, day=self.day.isoformat())
         self.root.after(30_000, self._tick_logger)
+
+    def open_stats(self):
+        if self.stats_win is None or not tk.Toplevel.winfo_exists(self.stats_win.win):
+            self.stats_win = StatsWindow(self.root, self.cfg, self)
+        else:
+            self.stats_win.win.lift()
 
     def open_connections(self):
         if self.connections_win is None or not tk.Toplevel.winfo_exists(self.connections_win.win):
@@ -816,6 +1305,11 @@ class NetMeterApp:
         save_config(self.cfg)
 
     def quit(self):
+        try:
+            down, up = self.today_totals()
+            log_daily_usage(down, up, day=self.day.isoformat())
+        except Exception:
+            pass
         self.sampler.stop()
         if self.tray:
             self.tray.stop()
@@ -830,6 +1324,11 @@ if __name__ == "__main__":
         try:
             import ctypes
             ctypes.windll.shcore.SetProcessDpiAwareness(1)
+        except Exception:
+            pass
+        try:
+            import ctypes
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("FPSMotion.NetMeter")
         except Exception:
             pass
     app = NetMeterApp()
